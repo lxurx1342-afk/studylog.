@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyLog - 학습 & 집중도 분석 프로그램</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f8fafc;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <button onclick="handleHeaderLogoClick()" class="flex items-center space-x-2 text-left focus:outline-none">
+                <i class="fa-solid fa-clock-rotate-left text-xl text-indigo-200"></i>
+                <h1 class="text-lg font-bold tracking-tight">StudyLog <span class="text-xs font-normal text-indigo-200">스터디로그</span></h1>
+            </button>
+            <div class="flex items-center gap-2">
+                <!-- App Navigation Tabs -->
+                <nav id="appNav" class="hidden flex bg-indigo-700/60 p-1 rounded-xl text-xs">
+                    <button id="nav-timer" onclick="switchTab('timer')" class="px-3 py-1.5 rounded-lg bg-white text-indigo-700 font-bold shadow-sm transition">
+                        <i class="fa-solid fa-stopwatch mr-1"></i> 타이머
+                    </button>
+                    <button id="nav-analytics" onclick="switchTab('analytics')" class="px-3 py-1.5 rounded-lg text-indigo-100 hover:text-white transition">
+                        <i class="fa-solid fa-chart-pie mr-1"></i> 분석
+                    </button>
+                </nav>
+                <!-- User Profile & Logout Badge -->
+                <div id="userProfileBadge" class="hidden flex items-center gap-2 bg-indigo-700/80 px-3 py-1 rounded-full text-xs">
+                    <span class="font-semibold text-indigo-100"><i class="fa-solid fa-user-check mr-1 text-emerald-300"></i><span id="currentUserName"></span></span>
+                    <button onclick="logoutUser()" class="text-[11px] bg-indigo-500/80 hover:bg-rose-500 text-white px-2 py-0.5 rounded-full transition" title="로그아웃">
+                        로그아웃
+                    </button>
+                </div>
+                <span id="projectTag" class="text-[11px] bg-indigo-500/70 px-2.5 py-1 rounded-full text-indigo-100 hidden sm:inline-block">동아리 탐구 프로젝트</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- App Views Container -->
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-6">
+
+        <!-- 0. LANDING COVER VIEW (앱 표지 메인 화면) -->
+        <section id="view-landing" class="fade-in max-w-2xl mx-auto my-8 bg-white rounded-3xl shadow-lg border border-slate-100 p-8 text-center space-y-6">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-indigo-50 text-indigo-600 text-3xl shadow-inner">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            
+            <div class="space-y-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">Smart Study & Rest Analytics</span>
+                <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight leading-tight">
+                    StudyLog
+                </h2>
+            </div>
+
+            <!-- Feature Cards Highlight -->
+            <div class="grid grid-cols-3 gap-3 text-left py-2">
+                <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                    <i class="fa-solid fa-circle-notch text-indigo-500 mb-1"></i>
+                    <h3 class="text-xs font-bold text-slate-700">원형 타이머</h3>
+                    <p class="text-[11px] text-slate-400 mt-0.5">시각적 몰입감을 더한 집중 측정</p>
+                </div>
+                <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                    <i class="fa-solid fa-pen-clip text-emerald-500 mb-1"></i>
+                    <h3 class="text-xs font-bold text-slate-700">자유 기록</h3>
+                    <p class="text-[11px] text-slate-400 mt-0.5">과목 및 휴식 활동 서술형 작성</p>
+                </div>
+                <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                    <i class="fa-solid fa-chart-simple text-amber-500 mb-1"></i>
+                    <h3 class="text-xs font-bold text-slate-700">패턴 분석</h3>
+                    <p class="text-[11px] text-slate-400 mt-0.5">일/주/월별 차트 시각화 및 리포트</p>
+                </div>
+            </div>
+
+            <!-- Start Button -->
+            <div class="pt-2">
+                <button onclick="handleStartClick()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-8 rounded-2xl shadow-md transition duration-200 flex items-center justify-center gap-2 mx-auto">
+                    <span>StudyLog 시작하기</span>
+                    <i class="fa-solid fa-arrow-right text-sm"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- 0.2 AUTH VIEW (로그인 및 회원가입 화면) -->
+        <section id="view-auth" class="hidden fade-in max-w-md mx-auto my-10 bg-white rounded-3xl shadow-lg border border-slate-100 p-8 space-y-6">
+            <div class="text-center space-y-2">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 text-2xl mb-1">
+                    <i class="fa-solid fa-user-lock"></i>
+                </div>
+                <h2 id="authTitle" class="text-xl font-extrabold text-slate-800">로그인</h2>
+                <p id="authSubtitle" class="text-xs text-slate-500">닉네임과 비밀번호를 입력해 내 학습 기록을 불러오세요.</p>
+            </div>
+
+            <!-- Auth Mode Toggle Tabs -->
+            <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+                <button type="button" id="tab-login" onclick="setAuthMode('login')" class="py-2 rounded-lg bg-white text-indigo-600 shadow-sm transition">
+                    로그인
+                </button>
+                <button type="button" id="tab-signup" onclick="setAuthMode('signup')" class="py-2 rounded-lg text-slate-500 hover:text-slate-700 transition">
+                    회원가입
+                </button>
+            </div>
+
+            <!-- Error / Info Message Box -->
+            <div id="authMessage" class="hidden text-xs p-3 rounded-xl font-medium text-center"></div>
+
+            <!-- Auth Form -->
+            <form onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">닉네임</label>
+                    <input type="text" id="authNickname" required placeholder="사용할 닉네임을 입력하세요" autocomplete="username" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">비밀번호</label>
+                    <input type="password" id="authPassword" required placeholder="비밀번호를 입력하세요" autocomplete="current-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <button type="submit" id="authSubmitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-md transition duration-200 text-sm">
+                    로그인하기
+                </button>
+            </form>
+
+            <div class="text-center pt-1">
+                <button type="button" onclick="switchTab('landing')" class="text-xs text-slate-400 hover:text-slate-600 transition underline">
+                    ← 처음 화면으로
+                </button>
+            </div>
+        </section>
+
+        <!-- 0.5 MODE SELECTION VIEW (공부 시작하기 / 기록 보기 선택 창) -->
+        <section id="view-mode-select" class="hidden fade-in max-w-xl mx-auto my-12 bg-white rounded-3xl shadow-lg border border-slate-100 p-8 text-center space-y-6">
+            <div class="space-y-1">
+                <span id="welcomeUserGreeting" class="inline-block text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mb-1"></span>
+                <h3 class="text-xl font-bold text-slate-800">원하시는 작업을 선택해주세요</h3>
+                <p class="text-xs text-slate-500">새로운 학습을 시작하거나 수집된 분석 기록을 확인하실 수 있습니다.</p>
+            </div>
+
+            <!-- Quick Motivation Status Strip -->
+            <div class="flex items-center justify-center gap-3 text-xs bg-slate-50 border border-slate-100 py-2.5 px-4 rounded-2xl">
+                <span class="font-bold text-orange-600 flex items-center gap-1">
+                    <i class="fa-solid fa-fire"></i> 연속 <span id="modeStreakVal">0</span>일째
+                </span>
+                <span class="text-slate-300">|</span>
+                <span class="font-bold text-indigo-600 flex items-center gap-1">
+                    <i class="fa-solid fa-bullseye"></i> 오늘 달성률 <span id="modeDailyPctVal">0%</span>
+                </span>
+                <span class="text-slate-300">|</span>
+                <span class="font-bold text-amber-600 flex items-center gap-1">
+                    <i class="fa-solid fa-medal"></i> 배지 <span id="modeBadgeCountVal">0</span>개
+                </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
+                <!-- 공부 시작하기 버튼 카드 -->
+                <button onclick="startMode('input')" class="group p-6 rounded-2xl bg-indigo-50 border-2 border-indigo-100 hover:border-indigo-600 hover:bg-indigo-600 hover:text-white transition-all duration-200 text-left flex flex-col justify-between h-40 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white group-hover:bg-white group-hover:text-indigo-600 flex items-center justify-center text-lg transition duration-200">
+                        <i class="fa-solid fa-play"></i>
+                    </div>
+                    <div>
+                        <span class="block text-base font-bold text-indigo-900 group-hover:text-white transition">공부 시작하기</span>
+                        <span class="text-[11px] text-indigo-500 group-hover:text-indigo-100 transition">학습 정보 입력 및 타이머 시작</span>
+                    </div>
+                </button>
+
+                <!-- 기록 보기 버튼 카드 -->
+                <button onclick="startMode('analytics')" class="group p-6 rounded-2xl bg-slate-50 border-2 border-slate-200 hover:border-emerald-600 hover:bg-emerald-600 hover:text-white transition-all duration-200 text-left flex flex-col justify-between h-40 shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-slate-700 text-white group-hover:bg-white group-hover:text-emerald-600 flex items-center justify-center text-lg transition duration-200">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <div>
+                        <span class="block text-base font-bold text-slate-800 group-hover:text-white transition">기록 보기</span>
+                        <span class="text-[11px] text-slate-500 group-hover:text-emerald-100 transition">학습 데이터 및 집중도 분석 차트</span>
+                    </div>
+                </button>
+            </div>
+
+            <button onclick="switchTab('landing')" class="text-xs text-slate-400 hover:text-slate-600 transition underline">
+                ← 메인 화면으로
+            </button>
+        </section>
+
+        <!-- 1. MAIN APP WORKSPACE -->
+        <div id="view-app" class="hidden fade-in max-w-2xl mx-auto">
+
+            <!-- Study Section (Study Input & Timer) -->
+            <section id="section-study" class="space-y-6">
+                <!-- Step 1: Session Input Controls Card -->
+                <div id="inputStepCard" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-pen text-indigo-500"></i> 학습 정보 입력
+                        </h3>
+                        <button onclick="switchTab('modeSelect')" class="text-xs text-slate-400 hover:text-slate-600 transition">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> 선택으로
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">과목명 (직접 작성)</label>
+                        <input type="text" id="subjectSelect" placeholder="예: 수학, 정보, 국어 등" value="수학" oninput="updateSubjectBadge()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">목표 공부시간 (분)</label>
+                        <input type="number" id="targetMinutes" value="25" min="1" max="180" oninput="resetProgressRing()" onchange="resetProgressRing()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">휴식 시간 (분)</label>
+                        <input type="number" id="restTimeInput" value="10" min="0" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">휴식 방식 (직접 작성)</label>
+                        <input type="text" id="restTypeInput" placeholder="예: 가벼운 스트레칭, 찬물 마시기, 짧은 산책 등" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <button type="button" onclick="startStudySession()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-md text-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i>
+                        <span>공부 시작하기</span>
+                    </button>
+                </div>
+
+                <!-- Step 2: Timer Card -->
+                <div id="timerCard" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center relative overflow-hidden fade-in">
+                    
+                    <!-- Back to Edit Button & Status Badge -->
+                    <div class="flex justify-between items-center mb-3">
+                        <button onclick="showInputStep()" class="text-xs font-medium text-slate-500 hover:text-indigo-600 transition flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-left"></i> 정보 수정
+                        </button>
+                        <div class="inline-block bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold">
+                            <span id="timerStatus">대기 중</span>
+                        </div>
+                    </div>
+
+                    <!-- Circular Progress Clock -->
+                    <div class="relative w-48 h-48 mx-auto my-2 flex items-center justify-center">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <!-- Background Track -->
+                            <circle cx="50" cy="50" r="42" stroke-width="6" stroke="#f1f5f9" fill="transparent" />
+                            <!-- Dynamic Progress Circle -->
+                            <circle id="progressRing" cx="50" cy="50" r="42" stroke-width="6" stroke="#6366f1" stroke-dasharray="263.89" stroke-dashoffset="0" stroke-linecap="round" fill="transparent" class="transition-all duration-300" />
+                        </svg>
+                        
+                        <!-- Inner Clock Content -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span id="subjectBadge" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full mb-1 truncate max-w-[120px]">과목 입력</span>
+                            <span id="timerDisplay" class="text-3xl font-extrabold text-slate-800 tracking-tight font-mono">25:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Timer Controls -->
+                    <div class="flex justify-center gap-2 mt-4">
+                        <button id="startBtn" onclick="startTimer()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-xl text-xs shadow-sm transition">
+                            <i class="fa-solid fa-play mr-1"></i> 시작
+                        </button>
+                        <button id="pauseBtn" onclick="pauseTimer()" class="hidden bg-amber-500 hover:bg-amber-600 text-white font-semibold px-5 py-2 rounded-xl text-xs shadow-sm transition">
+                            <i class="fa-solid fa-pause mr-1"></i> 일시정지
+                        </button>
+                        <button onclick="stopTimer()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold px-4 py-2 rounded-xl text-xs transition">
+                            <i class="fa-solid fa-stop mr-1"></i> 정지
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics & Logs Section -->
+            <section id="section-analytics" class="hidden space-y-6">
+                
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-lg font-bold text-slate-800">학습 분석 및 기록</h2>
+                    <button onclick="switchTab('modeSelect')" class="text-xs text-slate-400 hover:text-slate-600 transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> 선택으로
+                    </button>
+                </div>
+
+                <!-- Motivation & Goal Achievement Dashboard -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+                    <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-fire-flame-curved text-orange-500"></i> 나의 학습 동기부여 & 목표 달성
+                        </h3>
+                        <button onclick="openGoalModal()" class="text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl transition flex items-center gap-1">
+                            <i class="fa-solid fa-sliders"></i> 목표 시간 설정
+                        </button>
+                    </div>
+
+                    <!-- Streak & Daily/Weekly Progress Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <!-- Streak Card -->
+                        <div class="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-2xl bg-orange-500 text-white flex items-center justify-center text-xl shadow-sm shrink-0">
+                                <i class="fa-solid fa-fire"></i>
+                            </div>
+                            <div>
+                                <span class="block text-[11px] font-semibold text-orange-700">연속 공부 일수</span>
+                                <span id="streakDaysDisplay" class="text-xl font-extrabold text-slate-800">0일 연속</span>
+                                <span id="streakSubText" class="block text-[10px] text-orange-600/80 mt-0.5">오늘 공부를 시작해보세요!</span>
+                            </div>
+                        </div>
+
+                        <!-- Daily Goal Progress -->
+                        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between">
+                            <div class="flex justify-between items-baseline mb-1.5">
+                                <span class="text-[11px] font-bold text-slate-600">하루 목표 달성률</span>
+                                <span id="dailyGoalPct" class="text-sm font-extrabold text-indigo-600">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                                <div id="dailyGoalBar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-slate-400 mt-1.5">
+                                <span id="dailyGoalDetail">0분 / 120분</span>
+                                <span id="dailyGoalStatus" class="font-semibold text-indigo-500">진행 중</span>
+                            </div>
+                        </div>
+
+                        <!-- Weekly Goal Progress -->
+                        <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between">
+                            <div class="flex justify-between items-baseline mb-1.5">
+                                <span class="text-[11px] font-bold text-slate-600">주간 공부시간 목표</span>
+                                <span id="weeklyGoalPct" class="text-sm font-extrabold text-emerald-600">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                                <div id="weeklyGoalBar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-slate-400 mt-1.5">
+                                <span id="weeklyGoalDetail">0분 / 600분</span>
+                                <span id="weeklyGoalStatus" class="font-semibold text-emerald-600">진행 중</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Achievement Badges Section -->
+                    <div class="pt-1">
+                        <div class="flex justify-between items-center mb-2.5">
+                            <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-award text-amber-500"></i> 학습 성취 배지
+                            </span>
+                            <span id="badgeSummaryCount" class="text-[11px] font-semibold text-slate-400">0 / 6 획득</span>
+                        </div>
+                        <div id="badgesContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                            <!-- Dynamic Badges Rendered via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Analytics Card -->
+                <div class="bg-indigo-900 text-white rounded-2xl p-5 shadow-sm">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-200">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 기간별 집중도 분석 요약
+                        </h3>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <div class="bg-indigo-800/60 p-3 rounded-xl border border-indigo-700/50">
+                            <span class="block text-[10px] text-indigo-300 font-medium mb-0.5">총 공부시간</span>
+                            <span id="totalTimeMetric" class="text-base font-extrabold text-cyan-300">-</span>
+                        </div>
+                        <div class="bg-indigo-800/60 p-3 rounded-xl border border-indigo-700/50">
+                            <span class="block text-[10px] text-indigo-300 font-medium mb-0.5">평균 집중도</span>
+                            <span id="avgFocusMetric" class="text-base font-extrabold text-amber-300">-</span>
+                        </div>
+                        <div class="bg-indigo-800/60 p-3 rounded-xl border border-indigo-700/50">
+                            <span class="block text-[10px] text-indigo-300 font-medium mb-0.5">최고 집중 휴식</span>
+                            <span id="bestRestMetric" class="text-xs font-extrabold text-emerald-300 truncate block">-</span>
+                        </div>
+                        <div class="bg-indigo-800/60 p-3 rounded-xl border border-indigo-700/50">
+                            <span class="block text-[10px] text-indigo-300 font-medium mb-0.5">최적 공부시간</span>
+                            <span id="bestTimeMetric" class="text-xs font-extrabold text-sky-300 truncate block">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pattern Analytics Section -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-chart-line text-indigo-500"></i> 학습 패턴 및 집중도 분석
+                        </h3>
+                        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-medium text-slate-600">
+                            <button onclick="setPeriodFilter('day')" id="analytics-filter-day" class="px-2.5 py-1 rounded-lg bg-white shadow-sm text-indigo-600 font-bold transition">일별</button>
+                            <button onclick="setPeriodFilter('week')" id="analytics-filter-week" class="px-2.5 py-1 rounded-lg hover:text-slate-900 transition">주별</button>
+                            <button onclick="setPeriodFilter('month')" id="analytics-filter-month" class="px-2.5 py-1 rounded-lg hover:text-slate-900 transition">월별</button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Study Time Chart Added -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="text-xs font-semibold text-slate-500">과목별 공부시간 비교 (분 & 비중)</h4>
+                            <span id="topSubjectBadge" class="text-[11px] font-bold text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full">최다 학습: -</span>
+                        </div>
+                        <div class="h-44 relative">
+                            <canvas id="subjectTimeChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="text-xs font-semibold text-slate-500">휴식 방식에 따른 집중도 비교</h4>
+                            </div>
+                            <div class="h-44 relative">
+                                <canvas id="restChart"></canvas>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="text-xs font-semibold text-slate-500">공부시간에 따른 집중도 변화</h4>
+                            </div>
+                            <div class="h-44 relative">
+                                <canvas id="timeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session Log Data Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                    <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-check text-indigo-500"></i> 수집된 학습 데이터
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-medium text-slate-600">
+                                <button onclick="setPeriodFilter('day')" id="filter-day" class="px-2.5 py-1 rounded-lg bg-white shadow-sm text-indigo-600 font-bold transition">일별</button>
+                                <button onclick="setPeriodFilter('week')" id="filter-week" class="px-2.5 py-1 rounded-lg hover:text-slate-900 transition">주별</button>
+                                <button onclick="setPeriodFilter('month')" id="filter-month" class="px-2.5 py-1 rounded-lg hover:text-slate-900 transition">월별</button>
+                            </div>
+                            <button onclick="openClearModal()" class="text-xs font-semibold text-rose-500 hover:bg-rose-50 px-2.5 py-1.5 rounded-xl transition flex items-center gap-1">
+                                <i class="fa-solid fa-trash-can"></i> 초기화
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-slate-400 font-semibold">
+                                    <th class="p-2">일시</th>
+                                    <th class="p-2">과목</th>
+                                    <th class="p-2">공부시간</th>
+                                    <th class="p-2">휴식 (시간/방식)</th>
+                                    <th class="p-2 text-center">집중도</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordsTable" class="divide-y divide-slate-100">
+                                <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Custom Modal for Goal Settings -->
+    <div id="goalModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4">
+            <div class="text-center space-y-1">
+                <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-xl mb-2">
+                    <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-800">공부시간 목표 설정</h3>
+                <p class="text-xs text-slate-500">하루 목표와 주간 목표 시간을 자유롭게 설정해보세요.</p>
+            </div>
+
+            <div class="space-y-3 pt-2 border-t text-left">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">하루 목표 공부시간 (분)</label>
+                    <input type="number" id="dailyGoalInput" min="10" max="1440" step="10" value="120" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p class="text-[10px] text-slate-400 mt-1">예: 2시간 = 120분</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">주간 목표 공부시간 (분)</label>
+                    <input type="number" id="weeklyGoalInput" min="30" max="10080" step="30" value="600" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p class="text-[10px] text-slate-400 mt-1">예: 10시간 = 600분</p>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeGoalModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold py-2.5 rounded-xl transition">
+                    취소
+                </button>
+                <button onclick="saveGoalSettings()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 rounded-xl transition">
+                    목표 저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Clear Confirmation -->
+    <div id="clearModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4 text-center">
+            <div class="w-12 h-12 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">데이터 초기화</h3>
+            <p class="text-xs text-slate-500">수집된 모든 학습 기록과 그래프 데이터가 삭제됩니다. 정말 초기화하시겠습니까?</p>
+            <div class="flex gap-2">
+                <button onclick="closeClearModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold py-2.5 rounded-xl transition">
+                    취소
+                </button>
+                <button onclick="confirmClearData()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold py-2.5 rounded-xl transition">
+                    삭제하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Save Confirmation -->
+    <div id="saveModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl space-y-4 text-center">
+            <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-file-circle-check"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">학습 완료 & 집중도 평가</h3>
+            <p class="text-xs text-slate-500">학습이 완료되었습니다. 실제 공부시간과 집중도를 평가해 보세요.</p>
+            
+            <div class="text-left space-y-3 pt-2 border-t">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">실제 공부시간 (분)</label>
+                    <input type="number" id="actualStudyTimeInput" min="1" max="300" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600">
+                        자기평가 집중도 점수: <span id="scoreVal" class="font-bold text-indigo-600">8</span>점 / 10점
+                    </label>
+                    <input type="range" id="focusScoreInput" min="1" max="10" value="8" oninput="document.getElementById('scoreVal').innerText = this.value" class="w-full accent-indigo-600">
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span>1 (산만함)</span>
+                        <span>5 (보통)</span>
+                        <span>10 (최고의 집중)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+                <button onclick="closeSaveModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold py-2.5 rounded-xl transition">
+                    취소
+                </button>
+                <button id="confirmSaveBtn" onclick="confirmSaveRecord()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 rounded-xl transition">
+                    확인 및 저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-4 text-xs text-slate-400 border-t border-slate-200 bg-white mt-auto">
+        동아리 생활기록부 제출용 데이터 분석 웹 프로젝트
+    </footer>
+
+    <!-- Application Logic -->
+    <script>
+        const USERS_STORAGE_KEY = 'studylog_users_v1';
+        const CURRENT_USER_KEY = 'studylog_current_user_v1';
+        const RECORDS_PREFIX = 'studylog_records_user_';
+        const GOALS_PREFIX = 'studylog_goals_user_';
+
+        let currentUser = null;
+        let authMode = 'login'; // 'login' or 'signup'
+        let records = [];
+        let userGoals = { dailyMinutes: 120, weeklyMinutes: 600 };
+
+        function getUsersMap() {
+            try {
+                const raw = localStorage.getItem(USERS_STORAGE_KEY);
+                return raw ? JSON.parse(raw) : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveUsersMap(usersObj) {
+            try {
+                localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersObj));
+            } catch (e) {
+                console.error('Failed to save users:', e);
+            }
+        }
+
+        function loadUserRecords(nickname) {
+            if (!nickname) {
+                records = [];
+                userGoals = { dailyMinutes: 120, weeklyMinutes: 600 };
+                return;
+            }
+            try {
+                const saved = localStorage.getItem(RECORDS_PREFIX + nickname);
+                records = saved ? JSON.parse(saved) : [];
+                const savedGoals = localStorage.getItem(GOALS_PREFIX + nickname);
+                userGoals = savedGoals ? JSON.parse(savedGoals) : { dailyMinutes: 120, weeklyMinutes: 600 };
+            } catch (e) {
+                console.error('Failed to load records:', e);
+                records = [];
+                userGoals = { dailyMinutes: 120, weeklyMinutes: 600 };
+            }
+        }
+
+        function saveRecordsToStorage() {
+            if (!currentUser) return;
+            try {
+                localStorage.setItem(RECORDS_PREFIX + currentUser, JSON.stringify(records));
+            } catch (e) {
+                console.error('Failed to save records:', e);
+            }
+        }
+
+        function saveGoalsToStorage() {
+            if (!currentUser) return;
+            try {
+                localStorage.setItem(GOALS_PREFIX + currentUser, JSON.stringify(userGoals));
+            } catch (e) {
+                console.error('Failed to save goals:', e);
+            }
+        }
+
+        function openGoalModal() {
+            document.getElementById('dailyGoalInput').value = userGoals.dailyMinutes || 120;
+            document.getElementById('weeklyGoalInput').value = userGoals.weeklyMinutes || 600;
+            document.getElementById('goalModal').classList.remove('hidden');
+        }
+
+        function closeGoalModal() {
+            document.getElementById('goalModal').classList.add('hidden');
+        }
+
+        function saveGoalSettings() {
+            const dailyVal = parseInt(document.getElementById('dailyGoalInput').value);
+            const weeklyVal = parseInt(document.getElementById('weeklyGoalInput').value);
+
+            userGoals.dailyMinutes = !isNaN(dailyVal) && dailyVal >= 10 ? dailyVal : 120;
+            userGoals.weeklyMinutes = !isNaN(weeklyVal) && weeklyVal >= 30 ? weeklyVal : 600;
+
+            saveGoalsToStorage();
+            renderMotivation();
+            closeGoalModal();
+        }
+
+        function updateAuthUI() {
+            const badge = document.getElementById('userProfileBadge');
+            const nameEl = document.getElementById('currentUserName');
+            const greetingEl = document.getElementById('welcomeUserGreeting');
+
+            if (currentUser) {
+                badge.classList.remove('hidden');
+                nameEl.innerText = currentUser + '님';
+                if (greetingEl) greetingEl.innerText = `${currentUser}님, 환영합니다!`;
+                renderMotivation();
+            } else {
+                badge.classList.add('hidden');
+                nameEl.innerText = '';
+            }
+        }
+
+        function setAuthMode(mode) {
+            authMode = mode;
+            const tabLogin = document.getElementById('tab-login');
+            const tabSignup = document.getElementById('tab-signup');
+            const title = document.getElementById('authTitle');
+            const subtitle = document.getElementById('authSubtitle');
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const msgBox = document.getElementById('authMessage');
+
+            msgBox.classList.add('hidden');
+
+            const activeTabClass = "py-2 rounded-lg bg-white text-indigo-600 shadow-sm transition";
+            const inactiveTabClass = "py-2 rounded-lg text-slate-500 hover:text-slate-700 transition";
+
+            if (mode === 'login') {
+                tabLogin.className = activeTabClass;
+                tabSignup.className = inactiveTabClass;
+                title.innerText = '로그인';
+                subtitle.innerText = '닉네임과 비밀번호를 입력해 내 학습 기록을 불러오세요.';
+                submitBtn.innerText = '로그인하기';
+            } else {
+                tabLogin.className = inactiveTabClass;
+                tabSignup.className = activeTabClass;
+                title.innerText = '간편 회원가입';
+                subtitle.innerText = '사용할 닉네임과 비밀번호만 입력하면 즉시 가입됩니다.';
+                submitBtn.innerText = '회원가입 후 시작하기';
+            }
+        }
+
+        function showAuthMessage(text, isError = true) {
+            const msgBox = document.getElementById('authMessage');
+            msgBox.innerText = text;
+            msgBox.classList.remove('hidden', 'bg-rose-50', 'text-rose-600', 'bg-emerald-50', 'text-emerald-700');
+            if (isError) {
+                msgBox.classList.add('bg-rose-50', 'text-rose-600');
+            } else {
+                msgBox.classList.add('bg-emerald-50', 'text-emerald-700');
+            }
+        }
+
+        function handleAuthSubmit(e) {
+            e.preventDefault();
+            const nickname = document.getElementById('authNickname').value.trim();
+            const password = document.getElementById('authPassword').value.trim();
+
+            if (!nickname || !password) {
+                showAuthMessage('닉네임과 비밀번호를 모두 입력해주세요.');
+                return;
+            }
+
+            const users = getUsersMap();
+
+            if (authMode === 'signup') {
+                if (users[nickname]) {
+                    showAuthMessage('이미 사용 중인 닉네임입니다. 다른 닉네임을 입력하거나 로그인해주세요.');
+                    return;
+                }
+                users[nickname] = password;
+                saveUsersMap(users);
+                loginSuccess(nickname);
+            } else {
+                if (!users[nickname]) {
+                    showAuthMessage('존재하지 않는 닉네임입니다. 먼저 회원가입을 진행해주세요.');
+                    return;
+                }
+                if (users[nickname] !== password) {
+                    showAuthMessage('비밀번호가 일치하지 않습니다.');
+                    return;
+                }
+                loginSuccess(nickname);
+            }
+        }
+
+        function loginSuccess(nickname) {
+            currentUser = nickname;
+            localStorage.setItem(CURRENT_USER_KEY, nickname);
+            loadUserRecords(nickname);
+            updateAuthUI();
+
+            document.getElementById('authNickname').value = '';
+            document.getElementById('authPassword').value = '';
+            document.getElementById('authMessage').classList.add('hidden');
+
+            switchTab('modeSelect');
+        }
+
+        function logoutUser() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            resetTimerUI();
+
+            currentUser = null;
+            records = [];
+            localStorage.removeItem(CURRENT_USER_KEY);
+            updateAuthUI();
+
+            setAuthMode('login');
+            switchTab('auth');
+        }
+
+        function handleStartClick() {
+            if (currentUser) {
+                switchTab('modeSelect');
+            } else {
+                setAuthMode('login');
+                switchTab('auth');
+            }
+        }
+
+        function handleHeaderLogoClick() {
+            if (currentUser) {
+                switchTab('modeSelect');
+            } else {
+                switchTab('landing');
+            }
+        }
+
+        // View & Tab Navigation Functions
+        function switchTab(viewName) {
+            const landingView = document.getElementById('view-landing');
+            const authView = document.getElementById('view-auth');
+            const modeSelectView = document.getElementById('view-mode-select');
+            const appView = document.getElementById('view-app');
+            const appNav = document.getElementById('appNav');
+
+            const studySection = document.getElementById('section-study');
+            const analyticsSection = document.getElementById('section-analytics');
+            const navTimer = document.getElementById('nav-timer');
+            const navAnalytics = document.getElementById('nav-analytics');
+
+            // Hide all top-level views first
+            if (landingView) landingView.classList.add('hidden');
+            if (authView) authView.classList.add('hidden');
+            if (modeSelectView) modeSelectView.classList.add('hidden');
+            if (appView) appView.classList.add('hidden');
+            if (appNav) appNav.classList.add('hidden');
+
+            if (viewName === 'landing') {
+                if (landingView) landingView.classList.remove('hidden');
+            } else if (viewName === 'auth') {
+                if (authView) authView.classList.remove('hidden');
+            } else if (viewName === 'modeSelect') {
+                if (modeSelectView) modeSelectView.classList.remove('hidden');
+                renderMotivation();
+            } else if (viewName === 'timer' || viewName === 'analytics') {
+                if (appView) appView.classList.remove('hidden');
+                if (appNav) appNav.classList.remove('hidden');
+
+                const activeNavClass = "px-3 py-1.5 rounded-lg bg-white text-indigo-700 font-bold shadow-sm transition";
+                const inactiveNavClass = "px-3 py-1.5 rounded-lg text-indigo-100 hover:text-white transition";
+
+                if (viewName === 'timer') {
+                    if (studySection) studySection.classList.remove('hidden');
+                    if (analyticsSection) analyticsSection.classList.add('hidden');
+                    if (navTimer) navTimer.className = activeNavClass;
+                    if (navAnalytics) navAnalytics.className = inactiveNavClass;
+                } else {
+                    if (studySection) studySection.classList.add('hidden');
+                    if (analyticsSection) analyticsSection.classList.remove('hidden');
+                    if (navTimer) navTimer.className = inactiveNavClass;
+                    if (navAnalytics) navAnalytics.className = activeNavClass;
+                    renderTable();
+                    renderCharts();
+                    renderMotivation();
+                }
+            }
+        }
+
+        function startMode(mode) {
+            if (mode === 'input') {
+                switchTab('timer');
+                showInputStep();
+            } else if (mode === 'analytics') {
+                switchTab('analytics');
+            }
+        }
+
+        function showInputStep() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            const inputCard = document.getElementById('inputStepCard');
+            const timerCard = document.getElementById('timerCard');
+            if (inputCard) inputCard.classList.remove('hidden');
+            if (timerCard) timerCard.classList.add('hidden');
+        }
+
+        function startStudySession() {
+            const inputCard = document.getElementById('inputStepCard');
+            const timerCard = document.getElementById('timerCard');
+            if (inputCard) inputCard.classList.add('hidden');
+            if (timerCard) timerCard.classList.remove('hidden');
+
+            updateSubjectBadge();
+            resetTimerUI();
+            startTimer();
+        }
+
+        function setPeriodFilter(period) {
+            currentFilter = period;
+            const activeClass = "px-2.5 py-1 rounded-lg bg-white shadow-sm text-indigo-600 font-bold transition";
+            const inactiveClass = "px-2.5 py-1 rounded-lg hover:text-slate-900 transition";
+
+            ['day', 'week', 'month'].forEach(p => {
+                const btn1 = document.getElementById(`analytics-filter-${p}`);
+                const btn2 = document.getElementById(`filter-${p}`);
+                if (btn1) btn1.className = p === period ? activeClass : inactiveClass;
+                if (btn2) btn2.className = p === period ? activeClass : inactiveClass;
+            });
+
+            renderTable();
+            renderCharts();
+        }
+
+        let currentFilter = 'day'; // Default to day filter
+
+        // Timer Variables
+        let timerInterval = null;
+        let totalSeconds = 25 * 60;
+        let remainingSeconds = totalSeconds;
+        let isRunning = false;
+        const CIRCUMFERENCE = 2 * Math.PI * 42; // 263.89
+
+        // Chart Instances
+        let subjectTimeChartInstance = null;
+        let restChartInstance = null;
+        let timeChartInstance = null;
+
+        window.onload = function() {
+            const savedUser = localStorage.getItem(CURRENT_USER_KEY);
+            const users = getUsersMap();
+            if (savedUser && users[savedUser]) {
+                currentUser = savedUser;
+                loadUserRecords(currentUser);
+            }
+            updateAuthUI();
+            renderTable();
+            renderCharts();
+            renderMotivation();
+        }
+
+        // Period Data Filter Helper
+        function getFilteredRecords() {
+            if (!records || records.length === 0) return [];
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            return records.filter(r => {
+                if (!r.timestamp) return true;
+                const d = new Date(r.timestamp);
+                if (currentFilter === 'day') {
+                    return d >= startOfToday;
+                } else if (currentFilter === 'week') {
+                    const sevenDaysAgo = new Date(startOfToday);
+                    sevenDaysAgo.setDate(startOfToday.getDate() - 6);
+                    return d >= sevenDaysAgo;
+                } else if (currentFilter === 'month') {
+                    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                    return d >= startOfMonth;
+                }
+                return true;
+            });
+        }
+
+        // Timer & Progress Ring Logic
+        function updateSubjectBadge() {
+            const subjEl = document.getElementById('subjectSelect');
+            const badgeEl = document.getElementById('subjectBadge');
+            if (subjEl && badgeEl) {
+                badgeEl.innerText = subjEl.value.trim() || '과목 미지정';
+            }
+        }
+
+        function resetProgressRing() {
+            const targetEl = document.getElementById('targetMinutes');
+            const targetMin = targetEl ? (parseInt(targetEl.value) || 25) : 25;
+            totalSeconds = targetMin * 60;
+            remainingSeconds = totalSeconds;
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const mins = Math.floor(remainingSeconds / 60);
+            const secs = remainingSeconds % 60;
+            const displayEl = document.getElementById('timerDisplay');
+            if (displayEl) {
+                displayEl.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+
+            const ringEl = document.getElementById('progressRing');
+            if (ringEl && totalSeconds > 0) {
+                const progress = remainingSeconds / totalSeconds;
+                const offset = CIRCUMFERENCE * (1 - progress);
+                ringEl.style.strokeDashoffset = offset;
+            }
+        }
+
+        function resetTimerUI() {
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const statusEl = document.getElementById('timerStatus');
+            if (startBtn) startBtn.classList.remove('hidden');
+            if (pauseBtn) pauseBtn.classList.add('hidden');
+            if (statusEl) statusEl.innerText = '대기 중';
+            resetProgressRing();
+        }
+
+        function startTimer() {
+            if (isRunning) return;
+            isRunning = true;
+
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const statusEl = document.getElementById('timerStatus');
+            if (startBtn) startBtn.classList.add('hidden');
+            if (pauseBtn) pauseBtn.classList.remove('hidden');
+            if (statusEl) statusEl.innerText = '집중 학습 중...';
+
+            timerInterval = setInterval(() => {
+                if (remainingSeconds > 0) {
+                    remainingSeconds--;
+                    updateDisplay();
+                } else {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    if (statusEl) statusEl.innerText = '학습 완료!';
+                    openSaveModal();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            if (!isRunning) return;
+            clearInterval(timerInterval);
+            isRunning = false;
+
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const statusEl = document.getElementById('timerStatus');
+            if (startBtn) startBtn.classList.remove('hidden');
+            if (pauseBtn) pauseBtn.classList.add('hidden');
+            if (statusEl) statusEl.innerText = '일시정지됨';
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isRunning = false;
+
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const statusEl = document.getElementById('timerStatus');
+            if (startBtn) startBtn.classList.remove('hidden');
+            if (pauseBtn) pauseBtn.classList.add('hidden');
+            if (statusEl) statusEl.innerText = '학습 종료';
+
+            openSaveModal();
+        }
+
+        // Save Modal Control & Record Persistence
+        function openSaveModal() {
+            const elapsedSeconds = Math.max(0, totalSeconds - remainingSeconds);
+            const targetMin = parseInt(document.getElementById('targetMinutes').value) || 25;
+            const calculatedMin = elapsedSeconds > 0 ? Math.max(1, Math.round(elapsedSeconds / 60)) : targetMin;
+
+            const actualInput = document.getElementById('actualStudyTimeInput');
+            if (actualInput) actualInput.value = calculatedMin;
+
+            const scoreInput = document.getElementById('focusScoreInput');
+            const scoreVal = document.getElementById('scoreVal');
+            if (scoreInput) scoreInput.value = 8;
+            if (scoreVal) scoreVal.innerText = '8';
+
+            document.getElementById('saveModal').classList.remove('hidden');
+        }
+
+        function closeSaveModal() {
+            document.getElementById('saveModal').classList.add('hidden');
+        }
+
+        function confirmSaveRecord() {
+            const saveBtn = document.getElementById('confirmSaveBtn');
+            saveBtn.disabled = true;
+
+            const subject = document.getElementById('subjectSelect').value.trim() || '과목 미지정';
+            const actualStudyTime = parseInt(document.getElementById('actualStudyTimeInput').value) || 1;
+            const restTime = parseInt(document.getElementById('restTimeInput').value) || 0;
+            const restType = document.getElementById('restTypeInput').value.trim() || '휴식 미지정';
+            const score = parseInt(document.getElementById('focusScoreInput').value) || 8;
+
+            const newRecord = {
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                subject: subject,
+                studyTime: actualStudyTime,
+                restTime: restTime,
+                restType: restType,
+                score: score
+            };
+
+            records.push(newRecord);
+            saveRecordsToStorage();
+
+            resetTimerUI();
+            renderTable();
+            renderCharts();
+            renderMotivation();
+
+            closeSaveModal();
+            saveBtn.disabled = false;
+
+            // 학습 저장 후 분석(기록 보기) 화면으로 자동 전환
+            startMode('analytics');
+        }
+
+        // Modal Control & Clear Data Functions
+        function openClearModal() {
+            document.getElementById('clearModal').classList.remove('hidden');
+        }
+
+        function closeClearModal() {
+            document.getElementById('clearModal').classList.add('hidden');
+        }
+
+        function confirmClearData() {
+            records = [];
+            saveRecordsToStorage();
+            renderTable();
+            renderCharts();
+            renderMotivation();
+            closeClearModal();
+        }
+
+        // Motivation System: Streak, Goals, and Badges
+        function getDateKey(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function calculateStreak() {
+            if (!records || records.length === 0) return 0;
+
+            const uniqueDates = new Set();
+            records.forEach(r => {
+                if (r.timestamp) {
+                    uniqueDates.add(getDateKey(new Date(r.timestamp)));
+                }
+            });
+
+            const today = new Date();
+            const todayKey = getDateKey(today);
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            const yesterdayKey = getDateKey(yesterday);
+
+            let cursor = null;
+            if (uniqueDates.has(todayKey)) {
+                cursor = new Date(today);
+            } else if (uniqueDates.has(yesterdayKey)) {
+                cursor = new Date(yesterday);
+            } else {
+                return 0;
+            }
+
+            let streak = 0;
+            while (uniqueDates.has(getDateKey(cursor))) {
+                streak++;
+                cursor.setDate(cursor.getDate() - 1);
+            }
+            return streak;
+        }
+
+        function renderMotivation() {
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const dayOfWeek = now.getDay();
+            const startOfWeek = new Date(startOfToday);
+            startOfWeek.setDate(startOfToday.getDate() - dayOfWeek);
+
+            let todayMinutes = 0;
+            let weekMinutes = 0;
+            let totalMinutes = 0;
+            let maxFocusScore = 0;
+            const uniqueSubjects = new Set();
+
+            records.forEach(r => {
+                const d = new Date(r.timestamp);
+                const mins = r.studyTime || 0;
+                totalMinutes += mins;
+                if (d >= startOfToday) todayMinutes += mins;
+                if (d >= startOfWeek) weekMinutes += mins;
+                if (r.score > maxFocusScore) maxFocusScore = r.score;
+                if (r.subject) uniqueSubjects.add(r.subject.trim());
+            });
+
+            const streak = calculateStreak();
+            const dailyTarget = userGoals.dailyMinutes || 120;
+            const weeklyTarget = userGoals.weeklyMinutes || 600;
+
+            const dailyPct = Math.min(100, Math.round((todayMinutes / dailyTarget) * 100));
+            const weeklyPct = Math.min(100, Math.round((weekMinutes / weeklyTarget) * 100));
+
+            // Update Streak UI
+            const streakDisplay = document.getElementById('streakDaysDisplay');
+            const streakSub = document.getElementById('streakSubText');
+            if (streakDisplay) streakDisplay.innerText = `${streak}일 연속`;
+            if (streakSub) {
+                if (streak === 0) streakSub.innerText = '오늘 첫 기록을 남겨보세요!';
+                else if (streak >= 7) streakSub.innerText = '대단해요! 일주일 이상 꾸준한 몰입!';
+                else streakSub.innerText = '꾸준한 습관이 만들어지고 있어요!';
+            }
+
+            // Update Daily Goal UI
+            const dailyPctEl = document.getElementById('dailyGoalPct');
+            const dailyBarEl = document.getElementById('dailyGoalBar');
+            const dailyDetailEl = document.getElementById('dailyGoalDetail');
+            const dailyStatusEl = document.getElementById('dailyGoalStatus');
+            if (dailyPctEl) dailyPctEl.innerText = `${dailyPct}%`;
+            if (dailyBarEl) dailyBarEl.style.width = `${dailyPct}%`;
+            if (dailyDetailEl) dailyDetailEl.innerText = `${todayMinutes}분 / ${dailyTarget}분`;
+            if (dailyStatusEl) {
+                dailyStatusEl.innerText = dailyPct >= 100 ? '목표 달성!' : `${Math.max(0, dailyTarget - todayMinutes)}분 남음`;
+            }
+
+            // Update Weekly Goal UI
+            const weeklyPctEl = document.getElementById('weeklyGoalPct');
+            const weeklyBarEl = document.getElementById('weeklyGoalBar');
+            const weeklyDetailEl = document.getElementById('weeklyGoalDetail');
+            const weeklyStatusEl = document.getElementById('weeklyGoalStatus');
+            if (weeklyPctEl) weeklyPctEl.innerText = `${weeklyPct}%`;
+            if (weeklyBarEl) weeklyBarEl.style.width = `${weeklyPct}%`;
+            if (weeklyDetailEl) weeklyDetailEl.innerText = `${weekMinutes}분 / ${weeklyTarget}분`;
+            if (weeklyStatusEl) {
+                weeklyStatusEl.innerText = weeklyPct >= 100 ? '주간 달성!' : `${Math.max(0, weeklyTarget - weekMinutes)}분 남음`;
+            }
+
+            // Define Achievement Badges
+            const badges = [
+                {
+                    id: 'first_step',
+                    title: '첫 발걸음',
+                    desc: '첫 학습 기록 완료',
+                    icon: 'fa-shoe-prints',
+                    color: 'bg-sky-500',
+                    unlocked: records.length >= 1
+                },
+                {
+                    id: 'streak_3',
+                    title: '작심삼일 돌파',
+                    desc: '3일 연속 공부 달성',
+                    icon: 'fa-fire',
+                    color: 'bg-orange-500',
+                    unlocked: streak >= 3
+                },
+                {
+                    id: 'deep_focus',
+                    title: '초집중 모드',
+                    desc: '집중도 9점 이상 기록',
+                    icon: 'fa-bolt',
+                    color: 'bg-amber-500',
+                    unlocked: maxFocusScore >= 9
+                },
+                {
+                    id: 'daily_master',
+                    title: '오늘의 승자',
+                    desc: '하루 목표 100% 달성',
+                    icon: 'fa-circle-check',
+                    color: 'bg-indigo-600',
+                    unlocked: todayMinutes >= dailyTarget
+                },
+                {
+                    id: 'multi_subject',
+                    title: '올라운더',
+                    desc: '3개 이상 과목 학습',
+                    icon: 'fa-layer-group',
+                    color: 'bg-purple-600',
+                    unlocked: uniqueSubjects.size >= 3
+                },
+                {
+                    id: 'time_500',
+                    title: '열정 마라토너',
+                    desc: '누적 500분 공부 돌파',
+                    icon: 'fa-trophy',
+                    color: 'bg-emerald-600',
+                    unlocked: totalMinutes >= 500
+                }
+            ];
+
+            const unlockedCount = badges.filter(b => b.unlocked).length;
+
+            // Update Mode Selection Quick Strip
+            const modeStreakEl = document.getElementById('modeStreakVal');
+            const modeDailyPctEl = document.getElementById('modeDailyPctVal');
+            const modeBadgeCountEl = document.getElementById('modeBadgeCountVal');
+            if (modeStreakEl) modeStreakEl.innerText = streak;
+            if (modeDailyPctEl) modeDailyPctEl.innerText = `${dailyPct}%`;
+            if (modeBadgeCountEl) modeBadgeCountEl.innerText = unlockedCount;
+
+            // Render Badges Grid
+            const badgeSummaryEl = document.getElementById('badgeSummaryCount');
+            if (badgeSummaryEl) badgeSummaryEl.innerText = `${unlockedCount} / ${badges.length} 획득`;
+
+            const container = document.getElementById('badgesContainer');
+            if (container) {
+                container.innerHTML = badges.map(b => `
+                    <div class="rounded-2xl p-3 border text-center transition-all ${
+                        b.unlocked 
+                        ? 'bg-white border-slate-200 shadow-sm' 
+                        : 'bg-slate-50/70 border-slate-100 opacity-50 grayscale'
+                    }">
+                        <div class="w-9 h-9 rounded-xl ${b.unlocked ? b.color : 'bg-slate-300'} text-white flex items-center justify-center mx-auto mb-1.5 text-sm shadow-sm">
+                            <i class="fa-solid ${b.icon}"></i>
+                        </div>
+                        <div class="text-[11px] font-bold text-slate-800 truncate">${b.title}</div>
+                        <div class="text-[9px] text-slate-400 mt-0.5 leading-tight">${b.desc}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function formatDate(isoString) {
+            if (!isoString) return '-';
+            const d = new Date(isoString);
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const date = String(d.getDate()).padStart(2, '0');
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${month}.${date} ${hours}:${minutes}`;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('recordsTable');
+            const filtered = getFilteredRecords();
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">선택된 기간의 수집된 데이터가 없습니다.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.slice().reverse().map((r) => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-2 text-slate-400 font-mono">${formatDate(r.timestamp)}</td>
+                    <td class="p-2 font-medium text-slate-700">${r.subject}</td>
+                    <td class="p-2">${r.studyTime}분</td>
+                    <td class="p-2 text-slate-500">${r.restTime}분 / ${r.restType}</td>
+                    <td class="p-2 text-center font-bold ${r.score >= 8 ? 'text-emerald-600' : r.score >= 5 ? 'text-amber-600' : 'text-rose-500'}">${r.score}점</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderCharts() {
+            const filtered = getFilteredRecords();
+
+            const totalTimeMetricEl = document.getElementById('totalTimeMetric');
+            const avgMetricEl = document.getElementById('avgFocusMetric');
+            const bestRestMetricEl = document.getElementById('bestRestMetric');
+            const bestTimeMetricEl = document.getElementById('bestTimeMetric');
+            const topSubjectBadgeEl = document.getElementById('topSubjectBadge');
+
+            let totalStudyMinutes = 0;
+
+            if (filtered.length === 0) {
+                if (totalTimeMetricEl) totalTimeMetricEl.innerText = '-';
+                if (avgMetricEl) avgMetricEl.innerText = '-';
+                if (bestRestMetricEl) bestRestMetricEl.innerText = '-';
+                if (bestTimeMetricEl) bestTimeMetricEl.innerText = '-';
+                if (topSubjectBadgeEl) topSubjectBadgeEl.innerText = '최다 학습: -';
+            } else {
+                totalStudyMinutes = filtered.reduce((acc, cur) => acc + (cur.studyTime || 0), 0);
+                if (totalTimeMetricEl) totalTimeMetricEl.innerText = totalStudyMinutes + '분';
+
+                const totalFocus = filtered.reduce((acc, cur) => acc + cur.score, 0);
+                if (avgMetricEl) avgMetricEl.innerText = (totalFocus / filtered.length).toFixed(1) + '점';
+            }
+
+            // 1. 과목별 공부시간 비교 (누적 시간 및 전체 대비 비중 표시)
+            const subjectGroups = {};
+            filtered.forEach(r => {
+                const subj = r.subject || '기타';
+                subjectGroups[subj] = (subjectGroups[subj] || 0) + (r.studyTime || 0);
+            });
+
+            // 시간이 많은 순으로 정렬하여 비교 용이성 증대
+            const subjectLabels = Object.keys(subjectGroups).sort((a, b) => subjectGroups[b] - subjectGroups[a]);
+            const subjectTimes = subjectLabels.map(k => subjectGroups[k]);
+
+            if (filtered.length > 0 && subjectLabels.length > 0 && topSubjectBadgeEl) {
+                const topSubj = subjectLabels[0];
+                const topPct = totalStudyMinutes > 0 ? Math.round((subjectGroups[topSubj] / totalStudyMinutes) * 100) : 0;
+                topSubjectBadgeEl.innerText = `최다 학습: ${topSubj} (${topPct}%)`;
+            }
+
+            const subjectTimeChartEl = document.getElementById('subjectTimeChart');
+            if (subjectTimeChartEl) {
+                if (subjectTimeChartInstance) subjectTimeChartInstance.destroy();
+                const ctxSubj = subjectTimeChartEl.getContext('2d');
+                subjectTimeChartInstance = new Chart(ctxSubj, {
+                    type: 'bar',
+                    data: {
+                        labels: subjectLabels.length ? subjectLabels : ['데이터 없음'],
+                        datasets: [{
+                            label: '공부시간 (분)',
+                            data: subjectTimes.length ? subjectTimes : [0],
+                            backgroundColor: ['#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899'],
+                            borderRadius: 6,
+                            barPercentage: 0.5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        const val = ctx.raw || 0;
+                                        const pct = totalStudyMinutes > 0 ? ((val / totalStudyMinutes) * 100).toFixed(1) : 0;
+                                        return ` ${val}분 (전체 비중 ${pct}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. 휴식 방식에 따른 집중도 비교 (평균 점수 + 시행 횟수 툴팁 제공)
+            const restGroups = {};
+            filtered.forEach(r => {
+                const key = r.restType || '미지정';
+                if (!restGroups[key]) restGroups[key] = [];
+                restGroups[key].push(r.score);
+            });
+
+            // 집중도가 높은 순으로 정렬하여 비교
+            const restLabels = Object.keys(restGroups).sort((a, b) => {
+                const avgA = restGroups[a].reduce((s, v) => s + v, 0) / restGroups[a].length;
+                const avgB = restGroups[b].reduce((s, v) => s + v, 0) / restGroups[b].length;
+                return avgB - avgA;
+            });
+            const restScores = restLabels.map(k => {
+                const sum = restGroups[k].reduce((a, b) => a + b, 0);
+                return parseFloat((sum / restGroups[k].length).toFixed(1));
+            });
+
+            if (filtered.length > 0 && restLabels.length > 0) {
+                if (bestRestMetricEl) bestRestMetricEl.innerText = `${restLabels[0]} (${restScores[0]}점)`;
+            }
+
+            const restChartEl = document.getElementById('restChart');
+            if (restChartEl) {
+                if (restChartInstance) restChartInstance.destroy();
+                const ctxRest = restChartEl.getContext('2d');
+                restChartInstance = new Chart(ctxRest, {
+                    type: 'bar',
+                    data: {
+                        labels: restLabels.length ? restLabels : ['데이터 없음'],
+                        datasets: [{
+                            label: '평균 집중도',
+                            data: restScores.length ? restScores : [0],
+                            backgroundColor: restScores.map(s => s >= 8 ? '#10b981' : s >= 5 ? '#6366f1' : '#f59e0b'),
+                            borderRadius: 6,
+                            barPercentage: 0.55
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { min: 0, max: 10 } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        const label = ctx.label;
+                                        const count = restGroups[label] ? restGroups[label].length : 0;
+                                        return ` 평균 ${ctx.raw}점 (총 ${count}회 기록)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 3. 공부시간에 따른 집중도 변화 분석 (세분화된 구간별 추이 분석)
+            const timeGroups = { '20분 이하': [], '21~40분': [], '41~60분': [], '60분 초과': [] };
+            filtered.forEach(r => {
+                if (r.studyTime <= 20) timeGroups['20분 이하'].push(r.score);
+                else if (r.studyTime <= 40) timeGroups['21~40분'].push(r.score);
+                else if (r.studyTime <= 60) timeGroups['41~60분'].push(r.score);
+                else timeGroups['60분 초과'].push(r.score);
+            });
+
+            const timeLabels = Object.keys(timeGroups);
+            const timeScores = timeLabels.map(k => {
+                if (timeGroups[k].length === 0) return null; // 데이터가 없는 구간은 선 끊김/비교 처리
+                const sum = timeGroups[k].reduce((a, b) => a + b, 0);
+                return parseFloat((sum / timeGroups[k].length).toFixed(1));
+            });
+
+            if (filtered.length > 0) {
+                let maxTimeIdx = -1;
+                let maxVal = -1;
+                timeScores.forEach((score, idx) => {
+                    if (score !== null && score > maxVal) {
+                        maxVal = score;
+                        maxTimeIdx = idx;
+                    }
+                });
+                if (bestTimeMetricEl) bestTimeMetricEl.innerText = maxTimeIdx !== -1 ? `${timeLabels[maxTimeIdx]} (${maxVal}점)` : '-';
+            }
+
+            const timeChartEl = document.getElementById('timeChart');
+            if (timeChartEl) {
+                if (timeChartInstance) timeChartInstance.destroy();
+                const ctxTime = timeChartEl.getContext('2d');
+                timeChartInstance = new Chart(ctxTime, {
+                    type: 'line',
+                    data: {
+                        labels: timeLabels,
+                        datasets: [{
+                            label: '평균 집중도',
+                            data: timeScores,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                            pointBackgroundColor: '#059669',
+                            pointRadius: 4,
+                            fill: true,
+                            spanGaps: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { min: 0, max: 10 } },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        const label = ctx.label;
+                                        const count = timeGroups[label] ? timeGroups[label].length : 0;
+                                        return ` 평균 ${ctx.raw}점 (${count}회 평균)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
